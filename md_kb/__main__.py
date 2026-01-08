@@ -17,7 +17,7 @@ from md_kb.mcp_server import get_server, start_background_tasks
 logger = logging.getLogger(__name__)
 
 
-def main() -> NoReturn:
+def main() -> None:
     """
     Main entry point for the markdown knowledge base.
 
@@ -27,7 +27,7 @@ def main() -> NoReturn:
     """
     # Check for --mcp flag (must be before Typer parsing)
     if "--mcp" in sys.argv or "-m" in sys.argv:
-        _run_mcp_server()
+        asyncio.run(_run_mcp_server())
     else:
         # CLI mode
         try:
@@ -37,7 +37,7 @@ def main() -> NoReturn:
             pass
 
 
-def _run_mcp_server() -> NoReturn:
+async def _run_mcp_server() -> None:
     """
     Run MCP server.
 
@@ -46,8 +46,8 @@ def _run_mcp_server() -> NoReturn:
     """
     import mcp.server.stdio
 
-    # Start background tasks (initial index + watcher)
-    asyncio.run(start_background_tasks())
+    # Start background tasks (initial index + watcher) in the same event loop
+    await start_background_tasks()
 
     # Get the MCP server
     server = get_server()
@@ -55,19 +55,12 @@ def _run_mcp_server() -> NoReturn:
     # Run the server
     logger.info("Starting markdown knowledge base MCP server...")
 
-    # Run stdio server (async)
-    async def run_server():
-        async with mcp.server.stdio.stdio_server() as (read_stream, write_stream):
-            await server.run(
-                read_stream,
-                write_stream,
-                server.create_initialization_options(),
-            )
-
-    asyncio.run(run_server())
-
-    # Should never reach here
-    sys.exit(0)
+    async with mcp.server.stdio.stdio_server() as (read_stream, write_stream):
+        await server.run(
+            read_stream,
+            write_stream,
+            server.create_initialization_options(),
+        )
 
 
 if __name__ == "__main__":
