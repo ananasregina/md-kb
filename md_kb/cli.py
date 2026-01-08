@@ -83,7 +83,12 @@ def search(
 
     for i, doc in enumerate(results, 1):
         typer.echo(f"{i}. {doc.file_path}")
-        typer.echo(f"   Similarity: {max_distance - (doc.content if doc.embedding else 0):.4f}")
+        
+        # Distance from search (lower = more similar)
+        if doc.distance is not None:
+            typer.echo(f"   Similarity: {1.0 - doc.distance:.4f}")
+        else:
+            typer.echo("   Similarity: N/A")
 
         # Show snippet (first 200 chars of content)
         snippet = doc.content[:200].replace("\n", " ")

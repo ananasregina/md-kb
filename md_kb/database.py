@@ -314,12 +314,13 @@ async def search_documents(
         return results
 
 
-def _row_to_document(row) -> MarkdownDocument:
+def _row_to_document(row, include_distance: bool = False) -> MarkdownDocument:
     """
     Convert a PostgreSQL row to a MarkdownDocument object.
 
     Args:
         row: Database row
+        include_distance: Whether to include distance field from search results
 
     Returns:
         MarkdownDocument: The document object
@@ -332,4 +333,5 @@ def _row_to_document(row) -> MarkdownDocument:
         embedding=row["embedding"],
         indexed_at=row["indexed_at"].isoformat() if row["indexed_at"] else None,
         updated_at=row["updated_at"].isoformat() if row["updated_at"] else None,
+        distance=row.get("distance") if include_distance else None,
     )

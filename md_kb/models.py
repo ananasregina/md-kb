@@ -38,6 +38,9 @@ class MarkdownDocument:
     # Vector embedding
     embedding: Optional[list[float]] = None
 
+    # Distance/similarity from search
+    distance: Optional[float] = None
+
     # Timestamps
     indexed_at: Optional[str] = None
     updated_at: Optional[str] = None
