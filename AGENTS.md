@@ -1,0 +1,8 @@
+- Tech stack: Python
+- Target os: macOS
+- Use uv and pip, create and manage your Virtual Environment
+- Maintain .gitignore
+- Do git commits regularely
+- Use dotenv
+- Config in ~/.config/md-kb/config.yam with env vars overrides also the config file can be set as an argument 
+- Targets: CLI for rapid access (user) and MCP (AI agents)

@@ -1,0 +1,93 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "md-kb"
+version = "0.1.0"
+description = "Semantic search for markdown collections using PostgreSQL and pgvector"
+readme = "README.md"
+license = {text = "MIT"}
+authors = [
+    {name = "Tali Moreno", email = "talimoreno@example.com"}
+]
+keywords = ["markdown", "semantic-search", "postgresql", "pgvector", "mcp", "cli"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Database",
+    "Topic :: Text Processing :: Indexing",
+]
+requires-python = ">=3.11"
+dependencies = [
+    "mcp",
+    "typer",
+    "python-dotenv",
+    "asyncpg>=0.29.0",
+    "pgvector>=0.3.0",
+    "openai>=1.12.0",
+    "watchfiles",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "pytest-asyncio",
+    "pytest-cov",
+    "ruff",
+    "mypy",
+]
+
+[project.scripts]
+mdkb = "md_kb.__main__:main"
+
+[project.urls]
+Homepage = "https://github.com/talimoreno/md-kb"
+Repository = "https://github.com/talimoreno/md-kb"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["md_kb*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+asyncio_mode = "auto"
+addopts = [
+    "--cov=md_kb",
+    "--cov-report=html",
+    "--cov-report=term-missing",
+    "-v",
+]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+select = [
+    "E",
+    "W",
+    "F",
+    "I",
+    "N",
+    "UP",
+    "B",
+    "C4",
+    "SIM",
+]
+
+[tool.ruff.per-file-ignores]
+"__init__.py" = ["F401"]
+
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
