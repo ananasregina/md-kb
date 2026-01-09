@@ -68,8 +68,12 @@ EMBEDDING_URL=http://127.0.0.1:1338/v1
 EMBEDDING_MODEL=text-embedding-nomic-embed-text-v1.5-embedding
 EMBEDDING_DIMENSION=768
 
-# Optional: Log level (DEBUG, INFO, WARNING, ERROR)
+# Logging (MCP server and JSON-RPC server only)
 MDKB_LOG_LEVEL=INFO
+MDKB_LOG_LEVEL_CONSOLE=WARNING
+MDKB_LOG_FILE=mcp.log
+MDKB_LOG_MAX_BYTES=10485760
+MDKB_LOG_BACKUP_COUNT=10
 ```
 
 You can also place `.env` in `~/.config/mdkb/.env` for system-wide configuration.
@@ -118,6 +122,41 @@ Configuration is loaded in this order:
 1. `~/.config/mdkb/.env`
 2. `.env` in current directory
 3. Environment variables
+
+## Logging
+
+The MCP server and JSON-RPC server support comprehensive file logging with rotation:
+
+### Log Configuration
+
+Configure logging via environment variables:
+
+- `MDKB_LOG_LEVEL`: File log level (DEBUG, INFO, WARNING, ERROR, CRITICAL) - default: INFO
+- `MDKB_LOG_LEVEL_CONSOLE`: Console log level - default: WARNING
+- `MDKB_LOG_FILE`: Log file name (stored in `~/.config/mdkb/`) - default: mcp.log
+- `MDKB_LOG_MAX_BYTES`: Maximum log file size in bytes before rotation - default: 10485760 (10MB)
+- `MDKB_LOG_BACKUP_COUNT`: Number of backup log files to keep - default: 10
+
+### Log Format
+
+File logs include timestamps and caller info:
+```
+2026-01-08 14:30:45 - md_kb.indexer - INFO - indexer.py:123 - Indexed 5 documents
+```
+
+Console logs use a simpler format:
+```
+INFO: Indexed 5 documents
+```
+
+### Log Rotation
+
+Logs automatically rotate when reaching `MDKB_LOG_MAX_BYTES`. Old logs are renamed with `.1`, `.2`, etc., and the oldest beyond `MDKB_LOG_BACKUP_COUNT` are deleted. For example:
+- `mcp.log` (current)
+- `mcp.log.1` (most recent backup)
+- `mcp.log.2` (second most recent backup)
+- ...
+- `mcp.log.10` (oldest backup)
 
 ## How It Works
 

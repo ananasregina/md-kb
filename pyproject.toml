@@ -31,6 +31,8 @@ dependencies = [
     "pgvector>=0.3.0",
     "openai>=1.12.0",
     "watchfiles",
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.32.0",
 ]
 
 [project.optional-dependencies]

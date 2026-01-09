@@ -132,12 +132,69 @@ class Config:
 
     def get_log_level(self) -> str:
         """
-        Get the log level.
+        Get log level for file logging.
 
         Returns:
             str: Log level (default: INFO)
         """
         return os.getenv("MDKB_LOG_LEVEL", "INFO")
+
+    def get_log_level_console(self) -> str:
+        """
+        Get log level for console logging.
+
+        Returns:
+            str: Console log level (default: WARNING)
+        """
+        return os.getenv("MDKB_LOG_LEVEL_CONSOLE", "WARNING")
+
+    def get_jsonrpc_host(self) -> str:
+        """
+        Get JSON-RPC server host.
+
+        Returns:
+            str: JSON-RPC server host (default: 127.0.0.1)
+        """
+        return os.getenv("MDKB_JSONRPC_HOST", "127.0.0.1")
+
+    def get_jsonrpc_port(self) -> int:
+        """
+        Get JSON-RPC server port.
+
+        Returns:
+            int: JSON-RPC server port (default: 8023)
+        """
+        return int(os.getenv("MDKB_JSONRPC_PORT", "8023"))
+
+    def get_log_file(self) -> Path:
+        """
+        Get the log file path.
+
+        Returns:
+            Path: The log file path (default: ~/.config/mdkb/mcp.log)
+        """
+        config_dir = self._get_config_dir()
+        log_file = config_dir / os.getenv("MDKB_LOG_FILE", "mcp.log")
+        logger.debug(f"Log file: {log_file}")
+        return log_file
+
+    def get_log_max_bytes(self) -> int:
+        """
+        Get maximum log file size before rotation.
+
+        Returns:
+            int: Max bytes (default: 10MB = 10 * 1024 * 1024)
+        """
+        return int(os.getenv("MDKB_LOG_MAX_BYTES", str(10 * 1024 * 1024)))
+
+    def get_log_backup_count(self) -> int:
+        """
+        Get number of backup log files to keep.
+
+        Returns:
+            int: Number of backups (default: 10)
+        """
+        return int(os.getenv("MDKB_LOG_BACKUP_COUNT", "10"))
 
 
 # Singleton instance for the whole application
