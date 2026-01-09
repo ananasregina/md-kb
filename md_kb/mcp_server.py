@@ -162,9 +162,9 @@ async def _handle_search_markdown(arguments: dict[str, Any]) -> list[TextContent
     # Format results with snippets
     results = []
     for doc in documents:
-        # Create snippet (first 300 chars)
-        snippet = doc.content[:300].replace("\n", " ")
-        if len(doc.content) > 300:
+        # Create snippet (first 600 chars)
+        snippet = doc.content[:600].replace("\n", " ")
+        if len(doc.content) > 600:
             snippet += "..."
 
         results.append({
@@ -222,8 +222,8 @@ async def _handle_list_documents(arguments: dict[str, Any]) -> list[TextContent]
     results = []
     for doc in documents:
         # Create snippet
-        snippet = doc.content[:300].replace("\n", " ")
-        if len(doc.content) > 300:
+        snippet = doc.content[:600].replace("\n", " ")
+        if len(doc.content) > 600:
             snippet += "..."
 
         results.append({

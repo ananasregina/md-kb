@@ -90,9 +90,9 @@ def search(
         else:
             typer.echo("   Similarity: N/A")
 
-        # Show snippet (first 200 chars of content)
-        snippet = doc.content[:200].replace("\n", " ")
-        if len(doc.content) > 200:
+        # Show snippet (first 400 chars of content)
+        snippet = doc.content[:400].replace("\n", " ")
+        if len(doc.content) > 400:
             snippet += "..."
         typer.echo(f"   Snippet: {snippet}")
         typer.echo()
