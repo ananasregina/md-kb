@@ -150,6 +150,9 @@ async def ingest_document(document: MarkdownDocument) -> MarkdownDocument:
         raise ValueError("Failed to generate embedding for document")
 
     async with pool.acquire() as conn:
+        # Register vector codec for this connection
+        await register_vector(conn)
+
         # Upsert document on file_path
         result = await conn.fetchrow("""
             INSERT INTO markdown_documents (file_path, checksum, content, embedding)
