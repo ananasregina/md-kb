@@ -112,6 +112,21 @@ class Config:
 
         return mdkb_config
 
+    def get_database_name(self) -> Optional[str]:
+        """
+        Get the database name for MCP server tool naming.
+
+        Returns:
+            Optional[str]: Database name or None if not set
+        """
+        db_name = os.getenv("DATABASE_NAME")
+        if db_name:
+            db_name = db_name.strip()
+            if db_name:
+                logger.debug(f"Database name: {db_name}")
+                return db_name
+        return None
+
     def get_mcp_server_name(self) -> str:
         """
         Get the MCP server name.

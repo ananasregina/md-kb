@@ -5,22 +5,22 @@ Model Context Protocol server for AI agents and LLMs.
 Provides semantic search tools for markdown collections.
 """
 
+import asyncio
 import logging
 from typing import Any
-import asyncio
 
 from mcp.server import Server
-from mcp.types import Tool, TextContent
+from mcp.types import TextContent, Tool
 
+from md_kb.config import get_config
 from md_kb.database import (
+    get_all_documents,
+    get_document_count,
     init_db,
     search_documents,
-    get_document_count,
-    get_all_documents,
 )
 from md_kb.indexer import index_directory
 from md_kb.watcher import watch_directory
-from md_kb.config import get_config
 
 logger = logging.getLogger(__name__)
 
@@ -30,6 +30,21 @@ server = Server(
     name=config.get_mcp_server_name(),
     version=config.get_mcp_server_version(),
 )
+
+# Get database name for tool naming
+database_name = config.get_database_name()
+
+# Generate dynamic tool names based on database name
+if database_name:
+    search_tool_name = f"search_markdown_{database_name}"
+    count_tool_name = f"get_document_count_{database_name}"
+    list_tool_name = f"list_documents_{database_name}"
+    db_context = f" in '{database_name}' knowledge base"
+else:
+    search_tool_name = "search_markdown"
+    count_tool_name = "get_document_count"
+    list_tool_name = "list_documents"
+    db_context = ""
 
 
 def _register_tools():
@@ -47,8 +62,11 @@ def _register_tools():
         """
         return [
             Tool(
-                name="search_markdown",
-                description="Search markdown documents by semantic similarity. Returns file paths with content snippets and similarity scores.",
+                name=search_tool_name,
+                description=(
+                    f"Search markdown documents{db_context} by semantic similarity. "
+                    "Returns file paths with content snippets and similarity scores."
+                ),
                 inputSchema={
                     "type": "object",
                     "properties": {
@@ -62,15 +80,18 @@ def _register_tools():
                         },
                         "max_distance": {
                             "type": "number",
-                            "description": "Maximum similarity threshold (0.0-2.0, lower = more similar, default: 0.5)",
+                            "description": (
+                                "Maximum similarity threshold (0.0-2.0, "
+                                "lower = more similar, default: 0.5)"
+                            ),
                         },
                     },
                     "required": ["query"],
                 },
             ),
             Tool(
-                name="get_document_count",
-                description="Get the total number of indexed markdown documents.",
+                name=count_tool_name,
+                description=f"Get the total number of indexed markdown documents{db_context}.",
                 inputSchema={
                     "type": "object",
                     "properties": {},
@@ -78,8 +99,11 @@ def _register_tools():
                 },
             ),
             Tool(
-                name="list_documents",
-                description="List all indexed markdown documents with pagination. Returns file paths and metadata.",
+                name=list_tool_name,
+                description=(
+                    f"List all indexed markdown documents{db_context} with pagination. "
+                    "Returns file paths and metadata."
+                ),
                 inputSchema={
                     "type": "object",
                     "properties": {
@@ -89,7 +113,9 @@ def _register_tools():
                         },
                         "offset": {
                             "type": "integer",
-                            "description": "Number of documents to skip for pagination (default: 0)",
+                            "description": (
+                            "Number of documents to skip for pagination (default: 0)"
+                        ),
                         },
                     },
                     "required": [],
@@ -103,18 +129,18 @@ def _register_tools():
         Execute a markdown knowledge base tool.
 
         Args:
-            name: Tool name (search_markdown, get_document_count, list_documents)
+            name: Tool name
             arguments: Tool arguments
 
         Returns:
             list[TextContent]: Tool results
         """
         try:
-            if name == "search_markdown":
+            if name == search_tool_name:
                 return await _handle_search_markdown(arguments)
-            elif name == "get_document_count":
+            elif name == count_tool_name:
                 return await _handle_get_document_count()
-            elif name == "list_documents":
+            elif name == list_tool_name:
                 return await _handle_list_documents(arguments)
             else:
                 return [
