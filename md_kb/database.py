@@ -355,7 +355,7 @@ async def search_documents(
             sql += " OFFSET $3"
             rows = await conn.fetch(sql, query_embedding, max_distance, offset)
 
-        results = [_row_to_document(row) for row in rows]
+        results = [_row_to_document(row, include_distance=True) for row in rows]
 
         logger.debug(f"Semantic search for '{query}' returned {len(results)} documents (max_distance={max_distance})")
         return results

@@ -289,6 +289,8 @@ async def _handle_search_markdown(arguments: dict[str, Any]) -> list[TextContent
         results.append({
             "file_path": doc.file_path,
             "snippet": snippet,
+            "distance": doc.distance,
+            "similarity": 1.0 - doc.distance if doc.distance is not None else None,
             "indexed_at": doc.indexed_at,
             "updated_at": doc.updated_at,
         })
