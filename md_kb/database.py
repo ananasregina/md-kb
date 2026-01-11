@@ -9,6 +9,7 @@ from pgvector.asyncpg import register_vector
 import logging
 from typing import Optional, List
 from datetime import datetime
+from pathlib import Path
 
 from md_kb.config import get_config
 from md_kb.models import MarkdownDocument
@@ -191,6 +192,49 @@ async def get_document_by_path(file_path: str) -> Optional[MarkdownDocument]:
         if row:
             return _row_to_document(row)
         return None
+
+
+async def get_document_by_filename(filename: str) -> Optional[MarkdownDocument]:
+    """
+    Get a document by its filename only.
+
+    Args:
+        filename: The document's filename (must end with .md)
+
+    Returns:
+        MarkdownDocument: The document, or None if not found
+    """
+    pool = await get_pool()
+
+    async with pool.acquire() as conn:
+        row = await conn.fetchrow(
+            "SELECT * FROM markdown_documents WHERE file_path LIKE $1",
+            f"%/{filename}"
+        )
+
+        if row:
+            return _row_to_document(row)
+        return None
+
+
+async def list_filenames() -> List[str]:
+    """
+    List all document filenames without full paths.
+
+    Returns:
+        List[str]: List of filenames
+    """
+    pool = await get_pool()
+
+    async with pool.acquire() as conn:
+        rows = await conn.fetch("SELECT file_path FROM markdown_documents ORDER BY file_path")
+
+    filenames = []
+    for row in rows:
+        path_obj = Path(row["file_path"])
+        filenames.append(path_obj.name)
+
+    return filenames
 
 
 async def get_document_count() -> int:

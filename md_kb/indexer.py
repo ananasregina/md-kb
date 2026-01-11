@@ -12,7 +12,7 @@ import asyncio
 
 from md_kb.config import get_config
 from md_kb.models import MarkdownDocument
-from md_kb.database import ingest_document, get_document_by_path, delete_document, get_all_documents
+from md_kb.database import ingest_document, get_document_by_path, delete_document, get_all_documents, list_filenames
 
 logger = logging.getLogger(__name__)
 
@@ -187,3 +187,137 @@ async def index_file(file_path: str) -> MarkdownDocument:
     # Ingest
     result = await ingest_document(doc)
     return result
+
+
+async def create_file(filename: str, content: str) -> MarkdownDocument:
+    """
+    Create a new markdown file in the knowledge base directory.
+
+    Args:
+        filename: Name of the file (must end with .md)
+        content: Markdown content to write
+
+    Returns:
+        MarkdownDocument: The indexed document
+
+    Raises:
+        ValueError: If filename is invalid or file already exists
+    """
+    config = get_config()
+    markdown_dir = config.get_markdown_dir()
+
+    # Validate filename
+    if not filename.lower().endswith(".md"):
+        raise ValueError(f"Filename must end with .md: {filename}")
+
+    # Sanitize filename (prevent path traversal)
+    filename_clean = filename.replace("/", "").replace("\\", "")
+
+    # Build full path
+    file_path = markdown_dir / filename_clean
+
+    # Check if file already exists
+    if file_path.exists():
+        raise ValueError(f"File already exists: {filename_clean}")
+
+    # Write content to file
+    with open(file_path, "w", encoding="utf-8") as f:
+        f.write(content)
+
+    logger.info(f"Created new file: {filename_clean}")
+
+    # Index the file
+    doc = await index_file(str(file_path))
+    return doc
+
+
+async def update_file(filename: str, content: str) -> MarkdownDocument:
+    """
+    Update an existing markdown file in the knowledge base directory.
+
+    Args:
+        filename: Name of the file (must end with .md)
+        content: New markdown content
+
+    Returns:
+        MarkdownDocument: The updated document
+
+    Raises:
+        ValueError: If filename is invalid or file does not exist
+    """
+    config = get_config()
+    markdown_dir = config.get_markdown_dir()
+
+    # Validate filename
+    if not filename.lower().endswith(".md"):
+        raise ValueError(f"Filename must end with .md: {filename}")
+
+    # Sanitize filename (prevent path traversal)
+    filename_clean = filename.replace("/", "").replace("\\", "")
+
+    # Build full path
+    file_path = markdown_dir / filename_clean
+
+    # Check if file exists
+    if not file_path.exists():
+        raise ValueError(f"File does not exist: {filename_clean}")
+
+    # Write content to file
+    with open(file_path, "w", encoding="utf-8") as f:
+        f.write(content)
+
+    logger.info(f"Updated file: {filename_clean}")
+
+    # Index the file (will detect checksum change and update)
+    doc = await index_file(str(file_path))
+    return doc
+
+
+async def delete_file(filename: str) -> bool:
+    """
+    Delete a markdown file from the knowledge base directory.
+
+    Args:
+        filename: Name of the file (must end with .md)
+
+    Returns:
+        bool: True if deleted, False if file not found
+
+    Raises:
+        ValueError: If filename is invalid
+    """
+    config = get_config()
+    markdown_dir = config.get_markdown_dir()
+
+    # Validate filename
+    if not filename.lower().endswith(".md"):
+        raise ValueError(f"Filename must end with .md: {filename}")
+
+    # Sanitize filename (prevent path traversal)
+    filename_clean = filename.replace("/", "").replace("\\", "")
+
+    # Build full path
+    file_path = markdown_dir / filename_clean
+
+    # Check if file exists
+    if not file_path.exists():
+        return False
+
+    # Delete file
+    file_path.unlink()
+
+    logger.info(f"Deleted file: {filename_clean}")
+
+    # Delete from database
+    deleted = await delete_document(str(file_path))
+    return deleted
+
+
+async def list_files() -> list[str]:
+    """
+    List all markdown filenames in the knowledge base.
+
+    Returns:
+        list[str]: List of markdown filenames
+    """
+    return await list_filenames()

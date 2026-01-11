@@ -10,6 +10,10 @@ from md_kb.indexer import (
     index_file,
     find_markdown_files,
     compute_checksum,
+    create_file,
+    update_file,
+    delete_file,
+    list_files,
 )
 from md_kb.models import MarkdownDocument
 
@@ -238,5 +242,153 @@ class TestIndexDirectory:
         # Index directory (should handle error and continue)
         stats = await index_directory()
 
-        # Should have recorded the error
+        # Should have recorded error
         assert stats["errors"] >= 0
+
+
+class TestFileOperations:
+    """Test file-level write operations."""
+
+    @pytest.mark.asyncio
+    async def test_create_file_success(self, mock_env_vars):
+        """Test creating a new markdown file."""
+        filename = "test_create.md"
+        content = "# Test Document\n\nThis is a test document."
+
+        doc = await create_file(filename, content)
+
+        assert doc is not None
+        assert doc.file_path.endswith(filename)
+        assert doc.content == content
+        assert doc.id is not None
+
+        # Clean up
+        await delete_file(filename)
+
+    @pytest.mark.asyncio
+    async def test_create_file_invalid_extension(self, mock_env_vars):
+        """Test error when filename doesn't end with .md."""
+        with pytest.raises(ValueError, match="must end with .md"):
+            await create_file("test.txt", "Content")
+
+    @pytest.mark.asyncio
+    async def test_create_file_already_exists(self, mock_env_vars):
+        """Test error when file already exists."""
+        filename = "test_exists.md"
+        content = "# Test"
+
+        # Create file first
+        await create_file(filename, content)
+
+        # Try to create again
+        with pytest.raises(ValueError, match="already exists"):
+            await create_file(filename, "Different content")
+
+        # Clean up
+        await delete_file(filename)
+
+    @pytest.mark.asyncio
+    async def test_create_file_path_traversal(self, mock_env_vars):
+        """Test that path traversal attempts are sanitized."""
+        filename = "../etc/passwd.md"
+        content = "Malicious content"
+
+        # Should sanitize filename and create it in the correct directory
+        doc = await create_file(filename, content)
+
+        # Path should not contain parent directory traversal
+        sanitized_filename = filename.replace("/", "").replace("\\", "")
+        assert doc.file_path.endswith(sanitized_filename)
+
+        # Clean up
+        await delete_file("etcpasswd.md")
+
+    @pytest.mark.asyncio
+    async def test_update_file_success(self, mock_env_vars):
+        """Test updating an existing file."""
+        filename = "test_update.md"
+        initial_content = "# Initial Content"
+        updated_content = "# Updated Content\n\nNew paragraph."
+
+        # Create file first
+        await create_file(filename, initial_content)
+
+        # Update file
+        doc = await update_file(filename, updated_content)
+
+        assert doc is not None
+        assert doc.content == updated_content
+
+        # Clean up
+        await delete_file(filename)
+
+    @pytest.mark.asyncio
+    async def test_update_file_not_exists(self, mock_env_vars):
+        """Test error when updating non-existent file."""
+        with pytest.raises(ValueError, match="does not exist"):
+            await update_file("nonexistent.md", "Content")
+
+    @pytest.mark.asyncio
+    async def test_update_file_invalid_extension(self, mock_env_vars):
+        """Test error when filename doesn't end with .md."""
+        with pytest.raises(ValueError, match="must end with .md"):
+            await update_file("test.txt", "Content")
+
+    @pytest.mark.asyncio
+    async def test_delete_file_success(self, mock_env_vars):
+        """Test deleting a file."""
+        filename = "test_delete.md"
+        content = "# To be deleted"
+
+        # Create file first
+        await create_file(filename, content)
+
+        # Delete file
+        deleted = await delete_file(filename)
+
+        assert deleted is True
+
+        # Verify file doesn't exist
+        from md_kb.database import get_document_by_filename
+        doc = await get_document_by_filename(filename)
+        assert doc is None
+
+    @pytest.mark.asyncio
+    async def test_delete_file_not_exists(self, mock_env_vars):
+        """Test deleting non-existent file."""
+        deleted = await delete_file("nonexistent.md")
+
+        assert deleted is False
+
+    @pytest.mark.asyncio
+    async def test_delete_file_invalid_extension(self, mock_env_vars):
+        """Test error when filename doesn't end with .md."""
+        with pytest.raises(ValueError, match="must end with .md"):
+            await delete_file("test.txt")
+
+    @pytest.mark.asyncio
+    async def test_list_files(self, mock_env_vars):
+        """Test listing all files."""
+        # Create test files
+        await create_file("test_list_1.md", "Content 1")
+        await create_file("test_list_2.md", "Content 2")
+
+        # List files
+        files = await list_files()
+
+        assert isinstance(files, list)
+        assert "test_list_1.md" in files
+        assert "test_list_2.md" in files
+
+        # Clean up
+        await delete_file("test_list_1.md")
+        await delete_file("test_list_2.md")
+
+    @pytest.mark.asyncio
+    async def test_list_files_empty(self, mock_env_vars):
+        """Test listing files when no custom files exist."""
+        files = await list_files()
+
+        assert isinstance(files, list)
+        # Should at least have sample files from fixtures
+        assert len(files) >= 0

@@ -18,7 +18,7 @@ from md_kb.database import (
     get_document_count,
     get_all_documents,
 )
-from md_kb.indexer import index_directory
+from md_kb.indexer import index_directory, create_file, update_file, delete_file, list_files
 from md_kb.watcher import watch_directory
 from md_kb.config import get_config
 
@@ -135,6 +135,14 @@ async def jsonrpc_handler(request: Request):
             return await _handle_get_document_count(request_id)
         elif method == "list_documents":
             return await _handle_list_documents(params, request_id)
+        elif method == "create_document":
+            return await _handle_create_document(params, request_id)
+        elif method == "update_document":
+            return await _handle_update_document(params, request_id)
+        elif method == "delete_document":
+            return await _handle_delete_document(params, request_id)
+        elif method == "list_files":
+            return await _handle_list_files(request_id)
         else:
             return JSONResponse(
                 content=jsonrpc_error_response(request_id, -32601, "Method not found", f"Method '{method}' not found"),
@@ -228,6 +236,103 @@ async def _handle_list_documents(params: dict, request_id: Any) -> JSONResponse:
         results.append(result)
 
     return JSONResponse(content=jsonrpc_success_response(request_id, results))
+
+
+async def _handle_create_document(params: dict, request_id: Any) -> JSONResponse:
+    """Handle create_document method"""
+    filename = params.get("filename")
+    content = params.get("content")
+
+    if not filename or not isinstance(filename, str):
+        raise JSONRPCError(-32602, "Invalid params", "'filename' parameter is required and must be a string")
+
+    if not content or not isinstance(content, str):
+        raise JSONRPCError(-32602, "Invalid params", "'content' parameter is required and must be a string")
+
+    if not filename.lower().endswith(".md"):
+        raise JSONRPCError(-32602, "Invalid params", "'filename' must end with .md")
+
+    try:
+        doc = await create_file(filename, content)
+    except ValueError as e:
+        raise JSONRPCError(-32602, "Invalid params", str(e))
+    except Exception as e:
+        raise JSONRPCError(-32603, "Internal error", f"Create document failed: {str(e)}")
+
+    result = {
+        "file_path": doc.file_path,
+        "indexed_at": doc.indexed_at,
+        "updated_at": doc.updated_at,
+    }
+
+    return JSONResponse(content=jsonrpc_success_response(request_id, result))
+
+
+async def _handle_update_document(params: dict, request_id: Any) -> JSONResponse:
+    """Handle update_document method"""
+    filename = params.get("filename")
+    content = params.get("content")
+
+    if not filename or not isinstance(filename, str):
+        raise JSONRPCError(-32602, "Invalid params", "'filename' parameter is required and must be a string")
+
+    if not content or not isinstance(content, str):
+        raise JSONRPCError(-32602, "Invalid params", "'content' parameter is required and must be a string")
+
+    if not filename.lower().endswith(".md"):
+        raise JSONRPCError(-32602, "Invalid params", "'filename' must end with .md")
+
+    try:
+        doc = await update_file(filename, content)
+    except ValueError as e:
+        raise JSONRPCError(-32602, "Invalid params", str(e))
+    except Exception as e:
+        raise JSONRPCError(-32603, "Internal error", f"Update document failed: {str(e)}")
+
+    result = {
+        "file_path": doc.file_path,
+        "indexed_at": doc.indexed_at,
+        "updated_at": doc.updated_at,
+    }
+
+    return JSONResponse(content=jsonrpc_success_response(request_id, result))
+
+
+async def _handle_delete_document(params: dict, request_id: Any) -> JSONResponse:
+    """Handle delete_document method"""
+    filename = params.get("filename")
+
+    if not filename or not isinstance(filename, str):
+        raise JSONRPCError(-32602, "Invalid params", "'filename' parameter is required and must be a string")
+
+    if not filename.lower().endswith(".md"):
+        raise JSONRPCError(-32602, "Invalid params", "'filename' must end with .md")
+
+    try:
+        deleted = await delete_file(filename)
+    except ValueError as e:
+        raise JSONRPCError(-32602, "Invalid params", str(e))
+    except Exception as e:
+        raise JSONRPCError(-32603, "Internal error", f"Delete document failed: {str(e)}")
+
+    if not deleted:
+        raise JSONRPCError(-32602, "Invalid params", f"Document not found: {filename}")
+
+    result = {"deleted": True, "filename": filename}
+
+    return JSONResponse(content=jsonrpc_success_response(request_id, result))
+
+
+async def _handle_list_files(request_id: Any) -> JSONResponse:
+    """Handle list_files method"""
+    try:
+        filenames = await list_files()
+    except Exception as e:
+        raise JSONRPCError(-32603, "Internal error", f"List files failed: {str(e)}")
+
+    result = {"files": filenames, "count": len(filenames)}
+
+    return JSONResponse(content=jsonrpc_success_response(request_id, result))
 
 
 @app.get("/health")
