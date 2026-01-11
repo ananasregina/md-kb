@@ -47,3 +47,4 @@ ENV/
 
 # Logs
 *.log
+.DS_Store
